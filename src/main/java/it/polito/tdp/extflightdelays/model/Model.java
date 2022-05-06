@@ -29,6 +29,8 @@ import it.polito.tdp.extflightdelays.db.ExtFlightDelaysDAO;
 public class Model {
 
 	private Graph<Airport, DefaultWeightedEdge> grafo; 
+	Map<DefaultWeightedEdge, Double> archi_distanza; 
+	
 
 	//dichiarazione del graf fatta qui, quando viene riempita e non quando la dichiaro
 	public String creaGrafo(int distanza_minima) {
@@ -38,56 +40,43 @@ public class Model {
 		ExtFlightDelaysDAO dao= new ExtFlightDelaysDAO(); 
 		
 		//lista di fermate da convertire in vertici del grafo
+		archi_distanza = new HashMap<DefaultWeightedEdge,Double>(); 
 		List<Flight> flights = dao.loadAllFlights(); 
 		Set<Airport> airports= new HashSet<Airport>(); 
+		Set <Airport> allAirports= new HashSet<Airport>(dao.loadAllAirports()); 
 		Map<Integer, Airport> airportsMap= new HashMap<Integer, Airport>(); 
 		
 		for (Airport a: dao.loadAllAirports()) {
 			airportsMap.put(a.getId(),a); 
 		}
-		/*for (Flight f: flights) {
-			if(f.getDistance()>=distanza_minima) {
-				airports.add(airportsMap.get(f.getOriginAirportId()));
-				airports.add(airportsMap.get(f.getDestinationAirportId()));
-			}
-		 //questa parte è inutile, considera come vertici tutti gli aeroporti	
-				
-		}*/
 		
+		//oppure al posto di airportsMap usare la lista allAirpors
 		Graphs.addAllVertices(this.grafo, airportsMap.values());
 		
 		List <CoppiaId> aeroportiDaCollegare = dao.getAllAeroportiConnessi(distanza_minima); 
+		
 		for (CoppiaId coppia: aeroportiDaCollegare) {
 		//METODO PER AGGIUNGERE ARCHI PESATI
-		Graphs.addEdge(grafo,  airportsMap.get(coppia.getIdPartenza()), airportsMap.get(coppia.getIdArrivo()), coppia.getDistanza());
+		DefaultWeightedEdge e= Graphs.addEdge(grafo,  airportsMap.get(coppia.getIdPartenza()), airportsMap.get(coppia.getIdArrivo()), coppia.getDistanza());
+		archi_distanza.put(e, coppia.getDistanza());
+		System.out.println(e+ " " + coppia.getDistanza());
+		
 		}
 			
-		
-		
-		System.out.println(this.grafo);
+		//System.out.println(this.grafo);
 		System.out.println("Vertici =" + this.grafo.vertexSet().size()); //lista convertita in un set
 		System.out.println("Archi =" + this.grafo.edgeSet().size());
-		visitaGrafo(dao.loadAllAirports().get(0));
 		
-		return "Vertici: "+ this.grafo.vertexSet().size()+ "\nArchi: " + this.grafo.edgeSet().size()+ "\nArchi con relativa distanza:" ;
+		
+		return "Vertici: "+ this.grafo.vertexSet().size()+ "\nArchi: " + this.grafo.edgeSet().size()+ "\n" ;
 	
 		
 		}
 	
-	public void visitaGrafo(Airport aeroporto) {
-		GraphIterator <Airport, DefaultWeightedEdge> visita = new BreadthFirstIterator <>(this.grafo, aeroporto);
-		while (visita.hasNext()) {
-			Airport f= visita.next(); 
-			System.out.println(f);
-			
-		}
+	//per mostrare gli archi pesati
+	public Map <DefaultWeightedEdge, Double> getArchi_distanza() {
+		return archi_distanza; 
 	
-	}
-		
-	//MANCA LA PARTE DI MOSTRARE GLI ARCHI PESATI
-	//dao. molto costoso in termini di tempo 
-			
-			
-		
+	}		
 }
 
